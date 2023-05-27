@@ -1,0 +1,22 @@
+version: "3.7"
+services:
+  db:
+    image: postgres:15
+    container_name: cutaway_db
+    command: -p 3333
+    environment:
+      POSTGRES_PASSWORD: postgres
+    env_file:
+      - .env  
+  
+  app:
+    build:
+      context: .
+    env_file:
+      - .env
+    container_name: cutaway_api
+    command: ["/cutaway_api/app.sh"]
+    ports:
+      - 9999:8000
+    depends_on:
+      - db
