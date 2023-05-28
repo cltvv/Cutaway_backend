@@ -20,6 +20,8 @@ from src.config import DB_HOST, DB_NAME, DB_PASS, DB_PORT, DB_USER
 
 def start_mappers():
     mapper_registry = registry()
+    # MARKER 5: decoupling SqlAlphemy entities
+    # by mapping them to domain versions
     link_mapper = mapper_registry.map_imperatively(Link, link)
     image_mapper = mapper_registry.map_imperatively(Image, image)
     profile_mapper = mapper_registry.map_imperatively(

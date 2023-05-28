@@ -25,6 +25,9 @@ profile_router = APIRouter()
 user_profile_router = APIRouter()
 
 
+# MARKER 7: this file contains endpoint definitions for the API consumer
+# It's RESTful and it uses JSON
+
 def get_current_user_profiles(current_user: Annotated[User, Depends(get_current_user)]):
     if not current_user.profiles:
         raise HTTPException(
@@ -44,7 +47,7 @@ def validate_images(image_uow: SqlImageUow, profile_picture_id: Optional[str], b
         banner_image = get_image(SqlImageUow(), banner_picture_id)
         if not banner_image:
             loc.append('banner')
-    if loc: 
+    if loc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail={'loc': loc,
@@ -54,21 +57,23 @@ def validate_images(image_uow: SqlImageUow, profile_picture_id: Optional[str], b
 
 @user_profile_router.post('', status_code=status.HTTP_201_CREATED, response_model=ProfileRead)
 def create_profile(new_profile: ProfileCreate, current_user: Annotated[User, Depends(get_current_user)]):
-    profile = Profile(id=uuid4(), name=new_profile.name, created_at=datetime.utcnow())
+    profile = Profile(id=uuid4(), name=new_profile.name,
+                      created_at=datetime.utcnow())
     profile_data = new_profile.dict(exclude={'links', 'name'})
 
     if new_profile.banner or new_profile.profile_picture:
-        validate_images(SqlImageUow(), new_profile.profile_picture, new_profile.banner)
-    
+        validate_images(
+            SqlImageUow(), new_profile.profile_picture, new_profile.banner)
+
     for field in profile_data:
         setattr(profile, field, profile_data[field])
     if new_profile.links:
         for order, link in enumerate(new_profile.links):
             profile.links.add(Link(id=uuid4(),
-                                   url=link.url, 
-                                   title=link.title, 
+                                   url=link.url,
+                                   title=link.title,
                                    link_type=link.link_type,
-                                   order = order))
+                                   order=order))
     profile_response = ProfileRead.from_orm(profile)
     try:
         create(SqlUserUow(), current_user.id, profile)
@@ -88,7 +93,8 @@ def get_user_profiles(current_user_profiles: Annotated[User, Depends(get_current
 
 @user_profile_router.get('/{profile_id}', response_model=ProfileRead)
 def get_user_profile(current_user_profiles: Annotated[List[Profile], Depends(get_current_user_profiles)], profile_id: str):
-    profile = next((profile for profile in current_user_profiles if profile.id == profile_id), None)
+    profile = next(
+        (profile for profile in current_user_profiles if profile.id == profile_id), None)
     if not profile:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -99,19 +105,20 @@ def get_user_profile(current_user_profiles: Annotated[List[Profile], Depends(get
 
 @user_profile_router.put('/{profile_id}', response_model=ProfileRead)
 def update_user_profile(current_user_profiles: Annotated[List[Profile], Depends(get_current_user_profiles)], profile_id: str, new_profile: ProfileCreate):
-    profile = [profile for profile in current_user_profiles if profile.id == profile_id]
+    profile = [
+        profile for profile in current_user_profiles if profile.id == profile_id]
     if not profile:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail={"msg": "User doesn't have profile with this id"}
         )
-    
+
     if new_profile.banner or new_profile.profile_picture:
-        validate_images(SqlImageUow(), new_profile.profile_picture, new_profile.banner)
-    
+        validate_images(
+            SqlImageUow(), new_profile.profile_picture, new_profile.banner)
+
     updated_profile = update(SqlProfileUow(), profile_id, new_profile)
     return updated_profile
-
 
 
 @profile_router.get('/{profile_id}', response_model=ProfileRead)
@@ -131,13 +138,13 @@ def search_profiles(current_user: Annotated[User, Depends(get_current_user)],
                     page: int = Query(1, ge=1),
                     size: int = Query(10, ge=1)
                     ):
-    profiles, total = search_paginate(SqlProfileUow(), 
-                                      SqlSearchQueryUow(), 
-                                      SqlUserUow(), 
-                                      search_query.text_query, 
-                                      page, size, 
+    profiles, total = search_paginate(SqlProfileUow(),
+                                      SqlSearchQueryUow(),
+                                      SqlUserUow(),
+                                      search_query.text_query,
+                                      page, size,
                                       current_user.id)
-    
+
     result = []
     for profile in profiles:
         result.append(ProfileRead.from_orm(profile))

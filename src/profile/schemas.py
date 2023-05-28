@@ -18,17 +18,23 @@ class LinkBase(BaseModel):
 
 
 class ProfileCreate(BaseModel):
+    # MARKER 7: this magically serializes models
+    # from API endpoint JSON to python objects and back
+
     name: constr(
         strip_whitespace=True,
         min_length=1,
         max_length=32)
-    lastname: Optional[constr(strip_whitespace=True, min_length=1, max_length=32)]
+    lastname: Optional[constr(strip_whitespace=True,
+                              min_length=1, max_length=32)]
     profile_picture: Optional[str]
     banner: Optional[str]
     phone_number: Optional[str]
     email: Optional[EmailStr]
-    place_of_work: Optional[constr(strip_whitespace=True, min_length=1, max_length=64)]
-    education: Optional[constr(strip_whitespace=True, min_length=1, max_length=64)]
+    place_of_work: Optional[constr(
+        strip_whitespace=True, min_length=1, max_length=64)]
+    education: Optional[constr(
+        strip_whitespace=True, min_length=1, max_length=64)]
     links: Optional[conlist(LinkBase, max_items=10)]
 
     @validator('phone_number')

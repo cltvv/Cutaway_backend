@@ -15,6 +15,9 @@ from src.search_query.models import SearchQuery
 
 from src.profile.schemas import ProfileCreate
 
+
+# MARKER 6: uses domain level class and UoW pattern
+# to store data in the database
 def create(uow: UserUow, user_id: str, profile: Profile) -> None:
     with uow:
         user = uow.users.getByID(user_id)
@@ -45,24 +48,24 @@ def update(uow: ProfileUow, profile_id: str, new_profile: ProfileCreate) -> Prof
             profile.links.clear()
             for order, link in enumerate(new_profile.links):
                 profile.links.add(Link(id=uuid4(),
-                                    url=link.url, 
-                                    title=link.title, 
-                                    link_type=link.link_type,
-                                    order = order))
+                                       url=link.url,
+                                       title=link.title,
+                                       link_type=link.link_type,
+                                       order=order))
         if new_profile.links == []:
             profile.links.clear()
         uow.commit()
     return profile
 
 
-def search_paginate(profile_uow: ProfileUow, 
-                    search_query_uow: SearchQueryUow, 
-                    user_uow: UserUow, 
-                    text_query: str, 
-                    page: int, 
-                    size: int, 
+def search_paginate(profile_uow: ProfileUow,
+                    search_query_uow: SearchQueryUow,
+                    user_uow: UserUow,
+                    text_query: str,
+                    page: int,
+                    size: int,
                     user_id: str):
-    with profile_uow: 
+    with profile_uow:
         query = (
             profile_uow.session.query(Profile)
             .options(subqueryload(Profile.links))
@@ -87,9 +90,10 @@ def search_paginate(profile_uow: ProfileUow,
     with user_uow:
         user = user_uow.users.getByID(user_id)
         user_uow.commit()
-    
+
     with search_query_uow:
-        search_query_uow.search_queries.add(SearchQuery(uuid4(), user, text_query, created_at=datetime.utcnow()))
+        search_query_uow.search_queries.add(SearchQuery(
+            uuid4(), user, text_query, created_at=datetime.utcnow()))
         search_query_uow.commit()
 
     return profiles, total_count

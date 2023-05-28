@@ -12,6 +12,7 @@ from sqlalchemy import (
 from src.auth.orm import metadata
 
 
+# MARKER 5: orm table representation
 profile = Table(
     'profiles',
     metadata,
@@ -39,4 +40,3 @@ link = Table(
     Column('order', Integer, nullable=False),
     Column('profile_id', ForeignKey('profiles.id')),
 )
-

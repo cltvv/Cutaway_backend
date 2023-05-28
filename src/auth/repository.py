@@ -12,6 +12,8 @@ import lxml.etree as etree
 
 
 class AbstractRepository(abc.ABC):
+    # MARKER 3: repository interface
+    # to allow for multiple implementations
 
     @abc.abstractmethod
     def add(self, user: User) -> None:
@@ -20,17 +22,19 @@ class AbstractRepository(abc.ABC):
     @abc.abstractmethod
     def getByID(self, id: str) -> User:
         raise NotImplementedError
-    
+
     @abc.abstractmethod
     def getByUsername(self, username: str) -> User:
         raise NotImplementedError
-    
+
     @abc.abstractmethod
     def getByEmail(self, email: str) -> User:
         raise NotImplementedError
 
 
 class FakeRepository(AbstractRepository):
+    # MARKER 3: fake repo implementation
+    # storing data in memory
 
     def __init__(self, users: Set[User] = set()):
         self._users = users
@@ -40,15 +44,17 @@ class FakeRepository(AbstractRepository):
 
     def getByID(self, id: str):
         return next(u for u in self._users if u.id == id)
-    
+
     def getByUsername(self, username: str):
         return next(u for u in self._users if u.username == username)
-    
+
     def getByEmail(self, email: str):
         return next(u for u in self._users if u.email == email)
 
 
 class SQLAlchemyRepository(AbstractRepository):
+    # MARKER 5: real repo implementation
+    # interacting with SqlAlchemy
 
     def __init__(self, session: Session):
         self.session = session
@@ -63,15 +69,18 @@ class SQLAlchemyRepository(AbstractRepository):
         )
         user = query.filter_by(id=id).one_or_none()
         return user
-    
+
     def getByUsername(self, username: str) -> User:
         return self.session.query(User).filter_by(username=username).one_or_none()
-    
+
     def getByEmail(self, email: str) -> User:
         return self.session.query(User).filter_by(email=email).one_or_none()
-    
+
 
 class XPathRepository(AbstractRepository):
+    # MARKER 6: repo implementation
+    # using xml file and xpath to store data
+
     def __init__(self, xml_file_path):
         self.xml_file_path = xml_file_path
         self.tree = etree.parse(xml_file_path)
@@ -132,6 +141,3 @@ class XPathRepository(AbstractRepository):
         created_at = user_element.xpath("created_at")[0].text
 
         return User(id, username, email, hashed_password, is_active, created_at)
-
-
-
