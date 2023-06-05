@@ -8,6 +8,7 @@ from sqlalchemy.orm.session import Session
 from sqlalchemy.orm import joinedload, subqueryload
 
 import datetime
+import json
 import lxml.etree as etree
 
 
@@ -141,3 +142,58 @@ class XPathRepository(AbstractRepository):
         created_at = user_element.xpath("created_at")[0].text
 
         return User(id, username, email, hashed_password, is_active, created_at)
+    
+class JSONRepository(AbstractRepository):
+    def __init__(self, json_file_path):
+        self.json_file_path = json_file_path
+        self.data = self._load_data()
+
+    def add(self, user):
+        new_user = {
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "hashed_password": user.hashed_password,
+            "created_at": user.created_at.isoformat()
+        }
+
+        self.data.append(new_user)
+        self._save_data()
+
+    def getByID(self, id):
+        for user in self.data:
+            if user["id"] == id:
+                return self._parse_user(user)
+        return None
+
+    def getByUsername(self, username):
+        for user in self.data:
+            if user["username"] == username:
+                return self._parse_user(user)
+        return None
+
+    def getByEmail(self, email):
+        for user in self.data:
+            if user["email"] == email:
+                return self._parse_user(user)
+        return None
+
+    def _load_data(self):
+        try:
+            with open(self.json_file_path, "r") as file:
+                return json.load(file)
+        except FileNotFoundError:
+            return []
+
+    def _save_data(self):
+        with open(self.json_file_path, "w") as file:
+            json.dump(self.data, file, indent=4)
+
+    def _parse_user(self, user):
+        return User(
+            user["id"],
+            user["username"],
+            user["email"],
+            user["hashed_password"],
+            user["created_at"]
+        )

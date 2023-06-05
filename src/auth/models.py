@@ -20,6 +20,15 @@ class User:
         self.hashed_password = hashed_password
         self.profiles = profiles
 
+        self.active = self._create_active()
+        next(self.active)
+        self.blocked = self._create_blocked()
+        next(self.blocked)
+        self.deactivated = self._create_deactivated()
+        next(self.deactivated)
+
+        self.current_state = self.active
+
     # MARKER 4: eq overrides allow for comparing
     # class instances by their contents,
     # or any arbitrary criteria
@@ -45,20 +54,26 @@ class User:
             raise ValueError("Profile's limit exceeded")
         self.profiles.add(profile)
 
-    # def add_bookmark(self, bookmark: Bookmark):
-    #     if any(bk.bookmarked_profile == bookmark.bookmarked_profile for bk in self.bookmarks):
-    #         raise ValueError("Profile is allready bookmarked")
-    #     if (bookmark.bookmarked_profile in self.profiles):
-    #         raise ValueError("Can't bookmark your own profile")
-    #     self.bookmarks.add(bookmark)
-
-    # def delete_bookmark(self, profile_id: str):
-    #     bookmark_to_delete = None
-    #     for bookmark in self.bookmarks:
-    #         if bookmark.bookmarked_profile.id == profile_id:
-    #             bookmark_to_delete = bookmark
-    #             break
-    #     if bookmark_to_delete is not None:
-    #         self.bookmarks.remove(bookmark_to_delete)
-    #     else:
-    #         raise ValueError("Bookmark was not found for the given profile_id")
+    def send(self, command_input):
+        self.current_state.send(command_input)
+    
+    def _create_blocked(self):
+        while True:
+            command_input = yield
+            if command_input == 'unblock':
+                self.current_state = self.active
+    
+    def _create_active(self):
+        while True:
+            command_input = yield
+            if command_input == 'deactivate':
+                self.current_state = self.deactivated
+            if command_input == 'block':
+                self.current_state = self.blocked
+    
+    def _create_deactivated(self):
+        while True:
+            command_input = yield
+            if command_input == 'activate':
+                self.current_state = self.active
+    
